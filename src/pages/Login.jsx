@@ -1,34 +1,27 @@
-// src/pages/Login.tsx
 import { generateRandomString, generateCodeChallenge } from '../utils/auth';
 import { AUTH_CONFIG } from '../config';
 
 export function Login() {
   const handleLogin = async () => {
-    // 1. Gerar o Code Verifier (segredo aleatório para o PKCE)
     const codeVerifier = generateRandomString(128);
     
-    // 2. Gerar o Code Challenge (Hash SHA-256 do Verifier)
     const codeChallenge = await generateCodeChallenge(codeVerifier);
     
-    // 3. Gerar o State (proteção contra ataques CSRF)
     const state = generateRandomString(32);
 
-    // 4. Salvar verifier e state no sessionStorage (Requisito de Segurança)
     sessionStorage.setItem('code_verifier', codeVerifier);
     sessionStorage.setItem('auth_state', state);
 
-    // 5. Montar a URL de Autorização do Spotify
     const params = new URLSearchParams({
-      response_type: 'code',           // Obrigatório para OAuth
+      response_type: 'code',
       client_id: AUTH_CONFIG.CLIENT_ID,
       scope: AUTH_CONFIG.SCOPE,
       redirect_uri: AUTH_CONFIG.REDIRECT_URI,
-      state: state,                    // Envia o state para validação futura
-      code_challenge: codeChallenge,   // Envia o hash PKCE
-      code_challenge_method: 'S256',   // Método de criptografia
+      state: state,
+      code_challenge: codeChallenge,
+      code_challenge_method: 'S256',
     });
 
-    // 6. Redirecionar o usuário para a tela de login do Spotify
     window.location.href = `${AUTH_CONFIG.AUTH_URL}?${params.toString()}`;
   };
 
@@ -49,7 +42,7 @@ export function Login() {
         style={{
           padding: '15px 30px',
           fontSize: '16px',
-          backgroundColor: '#1DB954', // Verde Spotify
+          backgroundColor: '#1DB954',
           color: 'white',
           border: 'none',
           borderRadius: '50px',

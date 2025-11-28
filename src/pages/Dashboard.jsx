@@ -25,6 +25,7 @@ export function Dashboard() {
             'Authorization': `Bearer ${token}`
           }
         });
+        console.log("Resposta da API:", response);
 
         if (response.status === 204) {
           setTrack({ name: 'Nenhuma música tocando no momento.' });
@@ -42,7 +43,7 @@ export function Dashboard() {
     };
 
     fetchPlayback();
-  }, [navigate]);
+  }, [navigate, handleLogout]);
 
   if (loading) return <div>Carregando...</div>;
 
