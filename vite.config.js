@@ -10,6 +10,7 @@ export default defineConfig({
       },
     }),
   ],
+  base: '/Spotify_OAuth/',
   server: {
     port: 5173,
     host: true,
