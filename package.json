@@ -1,21 +1,14 @@
 {
-  "name": "spotify_oauth",
-  "version": "1.0.0",
-  "description": "Using OAuth2 to access github API",
-  "main": "index.js",
+  "name": "github-oauth",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/Jotape003/Spotify_OAuth.git"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
-  "bugs": {
-    "url": "https://github.com/Jotape003/Spotify_OAuth/issues"
-  },
-  "homepage": "https://github.com/Jotape003/Spotify_OAuth#readme"
+  "devDependencies": {
+    "vite": "^7.2.4"
+  }
 }
