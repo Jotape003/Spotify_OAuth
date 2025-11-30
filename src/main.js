@@ -92,7 +92,7 @@ async function loadDashboardPage() {
     const updateAlbumData = async () => {
         const pathname = String(window.location.pathname).toLocaleLowerCase()
 
-        if (pathname != "/dashboard") {
+        if (!pathname.endsWith("/dashboard")) {
             clearInterval(pollingInfoInterval)
             return
         }
@@ -188,7 +188,7 @@ async function loadDashboardPage() {
 
             const previousButton = document.querySelector("#previous-button")
             previousButton.addEventListener("click", () => {
-                player.togglePlay()
+                player.previousTrack()
             })
 
             const nextButton = document.querySelector("#next-button")
@@ -290,13 +290,13 @@ function goToErrorPage(errorMessage) {
 document.addEventListener("DOMContentLoaded", async () => {
     const pathname = String(window.location.pathname).toLocaleLowerCase()
 
-    if (pathname == "/") {
+    if (pathname.endsWith("/")) {
         await loadLoginPage()
-    } else if (pathname == "/dashboard") {
+    } else if (pathname.endsWith("/dashboard")) {
         await loadDashboardPage()
-    } else if (pathname == "/callback") {
+    } else if (pathname.endsWith("/callback")) {
         await loadCallbackPage()
-    } else if (pathname == "/error") {
+    } else if (pathname.endsWith("/error")) {
         await loadErrorPage()
     } else {
         load404Page()
