@@ -1,3 +1,21 @@
+export function addParamToUrl(url, param, value) {
+    if (url.endsWith("?")) {
+        return `${url}${param}=${value}`
+    } else {
+        return `${url}&${param}=${value}`
+    }
+}
+
+export function getRandomBytes() {
+    const randomBytes = new Uint8Array(16);
+
+    window.crypto.getRandomValues(randomBytes);
+
+    return Array.from(randomBytes)
+        .map(byte => byte.toString(16).padStart(2, '0'))
+        .join('');
+}
+
 export function generateRandomString(length) {
   const charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
   const randomValues = new Uint32Array(length);
