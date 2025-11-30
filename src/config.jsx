@@ -8,7 +8,7 @@ export const AUTH_CONFIG = {
   
   REDIRECT_URI: isProduction 
     ? `https://${GITHUB_USER}.github.io/${REPO_NAME}/callback`
-    : 'http://127.0.0.1:5173/callback',
+    : 'http://127.0.0.1:5173/Spotify_OAuth/callback',
   
   AUTH_URL: 'https://accounts.spotify.com/authorize',
   TOKEN_URL: 'https://accounts.spotify.com/api/token',

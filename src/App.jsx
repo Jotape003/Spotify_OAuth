@@ -7,7 +7,8 @@ import { Dashboard } from './pages/Dashboard';
 
 function App() {
   return (
-    <BrowserRouter>
+    // Mude para esta estrutura
+    <BrowserRouter basename="/Spotify_OAuth/"> 
       <Routes>
         <Route path="/" element={<Login />} />
         <Route path="/callback" element={<Callback />} />

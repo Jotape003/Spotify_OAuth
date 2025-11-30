@@ -15,6 +15,9 @@ export function Callback() {
       const storedState = sessionStorage.getItem('auth_state');
       const codeVerifier = sessionStorage.getItem('code_verifier');
 
+      console.log("Code", code)
+      console.log("codeVerifier", codeVerifier)
+      console.log("state", state)
       if (!code || !codeVerifier || state !== storedState) {
         setMensagem('Erro de segurança ou código inválido.');
         return;
