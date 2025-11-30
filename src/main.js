@@ -7,14 +7,19 @@ import axios from 'axios';
 
 const app = document.querySelector("#app")
 
-const { pathname } = window.location
-
 async function loadLoginPage() {
     app.innerHTML = `
     <div class="d-flex justify-content-center align-items-center flex-column gap-3 vh-100">
-        <img class="m-4" src="./public/github-icon.svg" alt="">
+        <img class="m-4" src="./public/spotify-icon.png" alt="" width="150px">
         <div class="display-6">
-        OAuth2 + GitHub Integration
+        OAuth2 + Spotify Integration
+        </div>
+        <div class="d-flex justify-content-center align-items-center">
+            <div class="m-2">Cargo:</div>
+            <select id="role-select" class="form-select" aria-label="Default select example">
+                <option selected value="viewer">Viewer</option>
+                <option value="manager">Manager</option>
+            </select>
         </div>
         <button id="login-button" class="mt-3 btn btn-light btn-lg d-flex align-items-center shadow-sm border rounded-pill px-4 py-2">
             <img src="https://img.icons8.com/color/48/000000/google-logo.png" alt="Google Logo" class="me-2" width="24"
@@ -35,34 +40,173 @@ async function loadLoginPage() {
 
         sessionStorage.setItem('code_verifier', codeVerifier);
         sessionStorage.setItem('auth_state', state);
+        sessionStorage.setItem('role', document.querySelector("#role-select").value);
+
+        let scope = ""
+        if (sessionStorage.getItem("role") == "viewer") {
+            scope = "user-read-currently-playing"
+        } else if (sessionStorage.getItem("role") == "manager") {
+            scope = "streaming user-read-currently-playing user-read-email user-read-private"
+        }
 
         const params = new URLSearchParams({
+            response_type: "code",
             client_id: VITE_CLIENT_ID,
             redirect_uri: `${window.location.origin}/callback`,
-            scope: "repo",
-            //  An unguessable random string. It is used to protect against
-            //  cross-site request forgery attacks.
             state: state,
-            // Must be a 43 character SHA-256 hash of a random string generated
-            // by the client. 
             code_challenge: codeChallenge,
             code_challenge_method: 'S256',
+            scope
         });
 
-        window.location.href = `https://github.com/login/oauth/authorize?${params.toString()}`;
+        window.location.href = `https://accounts.spotify.com/authorize?${params.toString()}`;
     })
 }
 
-function loadDashboardPage() {
-    console.log("Dashboard")
+async function loadDashboardPage() {
+    const token = sessionStorage.getItem('access_token');
+    const role = sessionStorage.getItem("role")
+
+    if (!token) {
+        goToErrorPage("Token não encontrado!")
+    }
+
+    if (!role) {
+        goToErrorPage("Role não foi identificada!")
+    }
+
+
+    app.innerHTML = `
+        <div class="d-flex flex-column align-items-center justify-content-center min-vh-100 px-2">
+            <div id="current-playing-data" class="d-flex flex-column align-items-center justify-content-center px-2">
+            </div>
+            <div class="m-2" id="player"></div>
+            <button id="button-logoff" type="button" class="m-2 btn btn-danger">Logoff</button>
+        </div>
+    `
+
+    const logoffButton = document.querySelector("#button-logoff")
+
+    logoffButton.addEventListener("click", logoff)
+
+    const updateAlbumData = async () => {
+        const pathname = String(window.location.pathname).toLocaleLowerCase()
+
+        if (pathname != "/dashboard") {
+            clearInterval(pollingInfoInterval)
+            return
+        }
+
+
+        const albumData = document.querySelector("#current-playing-data")
+
+        const currentPlaying = await axios.get(
+            "https://api.spotify.com/v1/me/player/currently-playing",
+            {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            }
+        )
+
+        const currentPlayingData = currentPlaying.data
+
+        const albumImages = currentPlayingData?.item?.album?.images
+        let albumImageURL = null
+        if (Array.isArray(albumImages) && albumImages.length > 0) {
+            albumImageURL = albumImages[0]?.url
+        }
+
+        const artists = currentPlayingData?.item?.artists
+        let artistsNames = ""
+        if (Array.isArray(artists)) {
+            artistsNames = artists.map(artist => artist?.name).join(", ")
+        }
+
+        const durationMS = currentPlayingData?.item?.duration_ms
+        let durationMinutes
+        let durationSeconds
+        if (durationMS) {
+            durationMinutes = Math.floor((parseInt(durationMS) / 1000) / 60)
+            durationSeconds = durationMinutes % 60
+        }
+
+        albumData.innerHTML = `
+            <img class="m-4" src="${albumImageURL}" alt="Album Image" width="200px">
+            <ul class="list-group w-100">
+                <li class="list-group-item"><strong>Música:</strong> ${currentPlayingData?.item?.name}</li>
+                <li class="list-group-item"><strong>Duração:</strong> ${durationMinutes}m ${durationSeconds}s</li>
+                <li class="list-group-item"><strong>Album:</strong> ${currentPlayingData?.item?.album?.name}</li>
+                <li class="list-group-item"><strong>Artista(s):</strong> ${artistsNames}</li>
+            </ul>
+        `
+    }
+
+    updateAlbumData()
+    const pollingInfoInterval = setInterval(updateAlbumData, 10000);
+
+    // Load pause button
+    if (role === "manager") {
+        const player_div = document.querySelector("#player")
+
+        player_div.innerHTML = `
+            <div class="d-flex">
+                <button id="previous-button" type="button" class="btn btn-primary m-1">&lt;&lt;</button>
+                <button id="play-stop-button" type="button" class="btn btn-primary m-1">Play/Stop</button>
+                <button id="next-button" type="button" class="btn btn-primary m-1">&gt;&gt;</button>
+            </div>
+        `
+
+        // const player = document.querySelector("#player")
+        const script = document.createElement("script");
+        script.src = "https://sdk.scdn.co/spotify-player.js";
+        script.async = true;
+
+        document.body.appendChild(script);
+
+        window.onSpotifyWebPlaybackSDKReady = () => {
+            const player = new window.Spotify.Player({
+                name: 'Web Playback SDK',
+                getOAuthToken: cb => { cb(token); },
+                volume: 0.5
+            });
+
+            player.addListener('ready', ({ device_id }) => {
+                console.log('Ready with Device ID', device_id);
+            });
+
+            player.addListener('not_ready', ({ device_id }) => {
+                console.log('Device ID has gone offline', device_id);
+            });
+
+            player.connect();
+
+            const playStopButton = document.querySelector("#play-stop-button")
+            playStopButton.addEventListener("click", () => {
+                player.togglePlay()
+            })
+
+            const previousButton = document.querySelector("#previous-button")
+            previousButton.addEventListener("click", () => {
+                player.togglePlay()
+            })
+
+            const nextButton = document.querySelector("#next-button")
+            nextButton.addEventListener("click", () => {
+                player.nextTrack()
+            })
+        };
+    }
+}
+
+function logoff() {
+    sessionStorage.clear()
+    window.location.href = `/`
 }
 
 async function loadCallbackPage() {
     const params = new URLSearchParams(window.location.search);
-    // The temporary code will expire after 10 minutes.
     const code = params.get('code');
-    //  If the states don't match, then a third party created the request, and
-    //  you should abort the process.
     const state = params.get('state');
 
     const storedState = sessionStorage.getItem('auth_state');
@@ -70,46 +214,35 @@ async function loadCallbackPage() {
 
     if (!code || !codeVerifier || state !== storedState) {
         // Ir para página de error
-        setMensagem('Erro de segurança ou código inválido.');
+        goToErrorPage('Erro de segurança ou código inválido.');
         return;
     }
 
     try {
-        const { VITE_CLIENT_ID, VITE_CLIENT_SECRET } = import.meta.env
+        const { VITE_CLIENT_ID } = import.meta.env
 
-        const params = {
+        const body = {
             client_id: VITE_CLIENT_ID,
-            client_secret: VITE_CLIENT_SECRET,
+            grant_type: 'authorization_code',
             code: code,
             redirect_uri: `${window.location.origin}/callback`,
             code_verifier: codeVerifier
         }
 
-        // console.log(params)
+        const response = await axios.post(
+            "https://accounts.spotify.com/api/token",
+            body,
+            {
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+            }
+        )
 
-        // const response = await axios.post(
-        //     "https://github.com/login/oauth/access_token",
-        //     params,
-        // )
-
-        const response = await fetch("https://github.com/login/oauth/access_token", {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-            },
-            body: params
-        });
-
-        const data = await response.json();
-
-        console.log(data)
-
-        // sessionStorage.setItem('access_token', data.access_token);
-        // navigate('/dashboard');
-
+        sessionStorage.setItem('access_token', response.data.access_token);
+        window.location.href = "/dashboard"
     } catch (error) {
-        console.error(error);
-        // goToErrorPage(error.message);
+        goToErrorPage(error.message);
     }
 };
 
@@ -155,10 +288,12 @@ function goToErrorPage(errorMessage) {
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
+    const pathname = String(window.location.pathname).toLocaleLowerCase()
+
     if (pathname == "/") {
         await loadLoginPage()
     } else if (pathname == "/dashboard") {
-        loadDashboardPage()
+        await loadDashboardPage()
     } else if (pathname == "/callback") {
         await loadCallbackPage()
     } else if (pathname == "/error") {
